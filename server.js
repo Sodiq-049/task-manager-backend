@@ -8,33 +8,42 @@ const connectDB = require("./config/db");
 const settingsRoutes = require("./routes/settings");
 const authRoutes = require("./routes/auth");
 
-
 dotenv.config();
 connectDB();
 
 const app = express();
 const server = http.createServer(app);
 
+// ✅ Allowed origins (local + Vercel frontend)
+const allowedOrigins = [
+  "http://localhost:3000",
+  "https://task-manager-frontend-navy.vercel.app"
+];
+
 // ✅ Set up Socket.IO server
 const io = new Server(server, {
   cors: {
-    origin: "http://localhost:3000",
+    origin: allowedOrigins,
     methods: ["GET", "POST", "PUT", "DELETE"],
-    credentials: true, // ✅ required for token/authenticated socket
-  },
+    credentials: true
+  }
 });
 
-
-// ✅ Make io accessible to all route handlers via app.locals
+// ✅ Make io accessible to all route handlers
 app.locals.io = io;
 
 // ✅ Middleware
-const corsOptions = {
-  origin: "http://localhost:3000", // ✅ your frontend URL
-  credentials: true,               // ✅ allow cookies/authorization headers
-};
-
-app.use(cors(corsOptions));
+app.use(cors({
+  origin: function (origin, callback) {
+    // allow requests with no origin (e.g. mobile apps, curl)
+    if (!origin || allowedOrigins.includes(origin)) {
+      callback(null, true);
+    } else {
+      callback(new Error("Not allowed by CORS"));
+    }
+  },
+  credentials: true
+}));
 
 app.use(express.json());
 
@@ -47,7 +56,6 @@ app.use("/api/search", require("./routes/search"));
 app.use("/api/settings", settingsRoutes);
 app.use("/api/auth", authRoutes);
 app.use("/uploads", express.static("uploads")); // serve uploaded files
-
 
 // ✅ Socket.IO events
 io.on("connection", (socket) => {
