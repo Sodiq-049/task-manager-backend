@@ -2,8 +2,8 @@ const express = require("express");
 const router = express.Router();
 const Notification = require("../models/Notification");
 
-// Simulate user middleware (you likely use auth middleware)
-const getUserId = (req) => req.user?.id || "64e123abc456def789000000"; // Replace with real user ID
+// Simulate user middleware (replace with real auth middleware in production)
+const getUserId = (req) => req.user?.id || "64e123abc456def789000000";
 
 // GET all notifications for a user
 router.get("/", async (req, res) => {
@@ -16,18 +16,18 @@ router.get("/", async (req, res) => {
   }
 });
 
-// GET unread notifications
+// ✅ GET unread notifications for a user
 router.get("/unread", async (req, res) => {
   try {
     const userId = getUserId(req);
-    const notes = await Notification.find({ userId, read: false });
-    res.json(notes);
+    const unread = await Notification.find({ userId, read: false }).sort({ createdAt: -1 });
+    res.json(unread);
   } catch (err) {
     res.status(500).json({ error: "Failed to fetch unread notifications" });
   }
 });
 
-// Mark notification as read
+// ✅ Mark a specific notification as read
 router.put("/:id/read", async (req, res) => {
   try {
     const userId = getUserId(req);
@@ -43,7 +43,7 @@ router.put("/:id/read", async (req, res) => {
   }
 });
 
-// DELETE all notifications for a user
+// ✅ Delete all notifications for a user
 router.delete("/clear", async (req, res) => {
   try {
     const userId = getUserId(req);
@@ -53,3 +53,5 @@ router.delete("/clear", async (req, res) => {
     res.status(500).json({ error: err.message });
   }
 });
+
+module.exports = router;
